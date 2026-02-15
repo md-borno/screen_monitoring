@@ -1,9 +1,11 @@
-# Use official PHP 8.4 + Apache
+# ----------------------------
+# Base Image
+# ----------------------------
 FROM php:8.4-apache
 
-# -----------------------
-# 1️⃣ System dependencies
-# -----------------------
+# ----------------------------
+# System Dependencies & PHP Extensions
+# ----------------------------
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -13,61 +15,57 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     curl \
     zip \
-    && docker-php-ext-install pdo pdo_mysql zip
-
-# -----------------------
-# 2️⃣ Node 20 for Vite
-# -----------------------
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+    libicu-dev \
+    g++ \
+    nodejs \
+    npm \
+    && docker-php-ext-install pdo pdo_mysql zip intl mbstring xml bcmath opcache
 
 # Enable Apache rewrite
 RUN a2enmod rewrite
 
-# -----------------------
-# 3️⃣ Set working directory
-# -----------------------
+# ----------------------------
+# Set working directory
+# ----------------------------
 WORKDIR /var/www/html
 
-# -----------------------
-# 4️⃣ Copy Composer & install PHP deps
-# -----------------------
+# ----------------------------
+# Copy Composer and install PHP deps
+# ----------------------------
 COPY composer.json composer.lock ./
+COPY .env.example .env
+
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
-RUN composer install --no-dev --optimize-autoloader
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader
+RUN rm .env
 
-# -----------------------
-# 5️⃣ Copy package.json & install Node deps
-# -----------------------
-COPY package*.json ./
-RUN npm ci --only=production
-
-# -----------------------
-# 6️⃣ Copy the rest of the app
-# -----------------------
+# ----------------------------
+# Copy application code
+# ----------------------------
 COPY . .
 
-# -----------------------
-# 7️⃣ Build Vite assets
-# -----------------------
+# ----------------------------
+# Install Node dependencies and build Vite assets
+# ----------------------------
+RUN npm ci --only=production
 RUN npm run build
 
-# -----------------------
-# 8️⃣ Set permissions
-# -----------------------
+# ----------------------------
+# Set storage and cache permissions
+# ----------------------------
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# -----------------------
-# 9️⃣ Set Apache root to public
-# -----------------------
+# ----------------------------
+# Set Apache Document Root
+# ----------------------------
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
-# -----------------------
-# 10️⃣ Expose HTTP
-# -----------------------
+# ----------------------------
+# Expose port 80
+# ----------------------------
 EXPOSE 80
 
-# -----------------------
-# 11️⃣ Start Apache
-# -----------------------
+# ----------------------------
+# Start Apache
+# ----------------------------
 CMD ["apache2-foreground"]
