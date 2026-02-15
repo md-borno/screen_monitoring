@@ -30,25 +30,24 @@ RUN a2enmod rewrite
 WORKDIR /var/www/html
 
 # ----------------------------
-# Copy Composer and install PHP deps
+# Copy composer files & install PHP deps
 # ----------------------------
 COPY composer.json composer.lock ./
-COPY .env.example .env
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
 RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader
-RUN rm .env
 
 # ----------------------------
-# Copy application code
+# Copy Node files & build Vite assets
 # ----------------------------
-COPY . .
-
-# ----------------------------
-# Install Node dependencies and build Vite assets
-# ----------------------------
+COPY package*.json ./
 RUN npm ci --only=production
 RUN npm run build
+
+# ----------------------------
+# Copy full application code
+# ----------------------------
+COPY . .
 
 # ----------------------------
 # Set storage and cache permissions
