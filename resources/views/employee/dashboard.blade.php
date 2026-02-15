@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Employee Dashboard</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <style>
         #preview {
             display: none;
