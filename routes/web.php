@@ -44,22 +44,17 @@ Route::middleware('auth')->group(function () {
 });
 
 // Admin routes
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-    Route::group(['middleware' => function ($request, $next) {
-        if (!auth()->user()->isAdmin()) {
-            return redirect('/dashboard')->with('error', 'Unauthorized access.');
-        }
-        return $next($request);
-    }], function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-        Route::get('/filter', [AdminController::class, 'filter'])->name('filter');
+// Admin routes
+Route::middleware(['auth', 'is.admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/filter', [AdminController::class, 'filter'])->name('filter');
 
-        // IMPORTANT: This route must come BEFORE the cleanup route
-        Route::get('/screenshot/{path}', [ScreenshotController::class, 'getScreenshot'])
-            ->where('path', '.*') // Allow slashes in path
-            ->name('screenshot.view');
+    // Screenshot view route (must be before cleanup)
+    Route::get('/screenshot/{path}', [ScreenshotController::class, 'getScreenshot'])
+        ->where('path', '.*')
+        ->name('screenshot.view');
 
-        Route::post('/cleanup', [AdminController::class, 'deleteOldScreenshots'])
-            ->name('cleanup');
-    });
+    // Cleanup old screenshots
+    Route::post('/cleanup', [AdminController::class, 'deleteOldScreenshots'])->name('cleanup');
 });
+
